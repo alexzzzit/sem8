@@ -3,15 +3,13 @@
 #include <string.h>
 
 char input[1024];
-int pos = 0; // Позиция в строке ввода
+int pos = 0;
 
 char currentToken[256];
 
-// Список стандартных типов переменных
 const char *VARIABLE_TYPES[] = {"int", "float", "double", "char", "bool", "void", NULL};
 const char *ACCESS_MODIFIERS[] = {"public", "private", "protected", NULL};
 
-// Прототипы функций
 void scan();
 void match(const char *expected);
 void error(const char *message);
@@ -21,7 +19,6 @@ void parse_body();
 void parse_access_modifier();
 void parse_data_type();
 
-// Функции для проверки символов
 int is_space(char c) {
     return c == ' ' || c == '\t' || c == '\n' || c == '\r';
 }
@@ -56,7 +53,6 @@ int is_access_modifier(const char *str) {
 
 // Лексический анализатор
 void scan() {
-    // Пропускаем пробелы
     while (is_space(input[pos])) pos++;
 
     if (input[pos] == '\0') {
@@ -78,7 +74,6 @@ void scan() {
         return;
     }
 
-    // Неизвестный символ
     error("Unknown symbol");
 }
 
@@ -106,9 +101,8 @@ void parse_class() {
         parse_body();
         match("}");
 
-        // Теперь `;` после `}` необязателен
         if (strcmp(currentToken, ";") == 0) {
-            scan();  // Пропускаем `;`, если он есть
+            scan();  
         }
     } else {
         error("Expected 'class' at the beginning");
