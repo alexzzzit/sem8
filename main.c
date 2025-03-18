@@ -2,13 +2,31 @@
 #include <stdlib.h>
 #include <string.h>
 
-char input[1024];
+#define MAX_TOKEN_LENGTH 256
+#define MAX_INPUT_LENGTH 1024
+
+char input[MAX_INPUT_LENGTH];
 int pos = 0;
 
-char currentToken[256];
+char currentToken[MAX_TOKEN_LENGTH];
 
 const char *VARIABLE_TYPES[] = {"int", "float", "double", "char", "bool", "void", NULL};
 const char *ACCESS_MODIFIERS[] = {"public", "private", "protected", NULL};
+
+typedef struct {
+    char name[MAX_TOKEN_LENGTH];
+    char type[MAX_TOKEN_LENGTH];
+    char access[MAX_TOKEN_LENGTH];
+} Field;
+
+typedef struct {
+    char name[MAX_TOKEN_LENGTH];
+    Field fields[100];
+    int fieldCount;
+} Class;
+
+Class classes[100];
+int classCount = 0;
 
 void scan();
 void match(const char *expected);
@@ -17,7 +35,8 @@ void parse_class();
 void parse_class_name();
 void parse_body();
 void parse_access_modifier();
-void parse_data_type();
+void parse_data_type(char *type);
+void semantic_analysis();
 
 int is_space(char c) {
     return c == ' ' || c == '\t' || c == '\n' || c == '\r';
@@ -81,7 +100,7 @@ void match(const char *expected) {
     if (strcmp(currentToken, expected) == 0) {
         scan();
     } else {
-        char msg[256];
+        char msg[MAX_TOKEN_LENGTH];
         snprintf(msg, sizeof(msg), "Expected '%s', but got '%s' at position %d", expected, currentToken, pos);
         error(msg);
     }
@@ -111,9 +130,11 @@ void parse_class() {
 
 void parse_class_name() {
     if (is_alpha(currentToken[0])) {
+        strcpy(classes[classCount].name, currentToken);
+        classCount++;
         scan();
     } else {
-        char msg[256];
+        char msg[MAX_TOKEN_LENGTH];
         snprintf(msg, sizeof(msg), "Invalid class name '%s' at position %d", currentToken, pos);
         error(msg);
     }
@@ -121,14 +142,23 @@ void parse_class_name() {
 
 void parse_body() {
     while (is_access_modifier(currentToken) || is_variable_type(currentToken) || is_alpha(currentToken[0])) {
+        char access[MAX_TOKEN_LENGTH] = "private"; // По умолчанию
         if (is_access_modifier(currentToken)) {
+            strcpy(access, currentToken);
             parse_access_modifier();
         }
-        parse_data_type();
+
+        char type[MAX_TOKEN_LENGTH];
+        parse_data_type(type);
+
         if (is_alpha(currentToken[0])) {
+            strcpy(classes[classCount - 1].fields[classes[classCount - 1].fieldCount].name, currentToken);
+            strcpy(classes[classCount - 1].fields[classes[classCount - 1].fieldCount].type, type);
+            strcpy(classes[classCount - 1].fields[classes[classCount - 1].fieldCount].access, access);
+            classes[classCount - 1].fieldCount++;
             scan(); // Идентификатор
         } else {
-            char msg[256];
+            char msg[MAX_TOKEN_LENGTH];
             snprintf(msg, sizeof(msg), "Expected identifier, but got '%s' at position %d", currentToken, pos);
             error(msg);
         }
@@ -140,19 +170,30 @@ void parse_access_modifier() {
     if (is_access_modifier(currentToken)) {
         scan();
     } else {
-        char msg[256];
+        char msg[MAX_TOKEN_LENGTH];
         snprintf(msg, sizeof(msg), "Expected access modifier, but got '%s' at position %d", currentToken, pos);
         error(msg);
     }
 }
 
-void parse_data_type() {
+void parse_data_type(char *type) {
     if (is_variable_type(currentToken) || is_alpha(currentToken[0])) {
+        strcpy(type, currentToken);
         scan();
     } else {
-        char msg[256];
+        char msg[MAX_TOKEN_LENGTH];
         snprintf(msg, sizeof(msg), "Expected data type, but got '%s' at position %d", currentToken, pos);
         error(msg);
+    }
+}
+
+// Семантический анализатор
+void semantic_analysis() {
+    for (int i = 0; i < classCount; i++) {
+        printf("Class: %s\n", classes[i].name);
+        for (int j = 0; j < classes[i].fieldCount; j++) {
+            printf("  Field: %s %s %s\n", classes[i].fields[j].access, classes[i].fields[j].type, classes[i].fields[j].name);
+        }
     }
 }
 
@@ -164,12 +205,12 @@ int main() {
     parse_class();
 
     if (strcmp(currentToken, "EOF") != 0) {
-        char msg[256];
+        char msg[MAX_TOKEN_LENGTH];
         snprintf(msg, sizeof(msg), "Unexpected input '%s' at position %d", currentToken, pos);
         error(msg);
     }
 
+    semantic_analysis();
     printf("Parsing succeeded!\n");
     return 0;
 }
-
