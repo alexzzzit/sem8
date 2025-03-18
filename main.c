@@ -37,6 +37,9 @@ void parse_body();
 void parse_access_modifier();
 void parse_data_type(char *type);
 void semantic_analysis();
+int is_variable_type(const char *str);
+int is_access_modifier(const char *str);
+int is_declared_class(const char *name);
 
 int is_space(char c) {
     return c == ' ' || c == '\t' || c == '\n' || c == '\r';
@@ -65,6 +68,14 @@ int is_variable_type(const char *str) {
 int is_access_modifier(const char *str) {
     for (int i = 0; ACCESS_MODIFIERS[i]; i++) {
         if (strcmp(str, ACCESS_MODIFIERS[i]) == 0)
+            return 1;
+    }
+    return 0;
+}
+
+int is_declared_class(const char *name) {
+    for (int i = 0; i < classCount; i++) {
+        if (strcmp(classes[i].name, name) == 0)
             return 1;
     }
     return 0;
@@ -193,6 +204,13 @@ void semantic_analysis() {
         printf("Class: %s\n", classes[i].name);
         for (int j = 0; j < classes[i].fieldCount; j++) {
             printf("  Field: %s %s %s\n", classes[i].fields[j].access, classes[i].fields[j].type, classes[i].fields[j].name);
+
+            // Проверка, что тип поля либо встроенный, либо объявленный класс
+            if (!is_variable_type(classes[i].fields[j].type) && !is_declared_class(classes[i].fields[j].type)) {
+                char msg[MAX_TOKEN_LENGTH];
+                snprintf(msg, sizeof(msg), "Undeclared type '%s' in class '%s'", classes[i].fields[j].type, classes[i].name);
+                error(msg);
+            }
         }
     }
 }
