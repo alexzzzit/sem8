@@ -9,7 +9,3 @@
 ### Пример верной грамматики:
 ```c
 class Test {public int x; private int y; Test z;}
-
-### Пример неверной грамматики:
-```c
-class Test {public int x; private int y; Test2 z;}
